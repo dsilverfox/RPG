@@ -1,1 +1,1 @@
-Pick up on Pizza Legends Part 7.
+Ran into a problem where it is allowing me to walk 'into' walls and get stuck inside that cell. Restart Part 7 to troubleshoot.
