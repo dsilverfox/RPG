@@ -9,6 +9,8 @@ class OverworldMap {
 
         this.upperImage = new Image();
         this.upperImage.src = config.upperSrc;
+
+        this.isCutscenePlaying = false;
     }
 
     drawLowerImage(ctx, cameraPerson) {
@@ -20,30 +22,46 @@ class OverworldMap {
     }
 
     isSpaceTaken(currentX, currentY, direction) {
-        const {x,y} = utils.nextPosition(currentX, currentY, direction)
+        const { x, y } = utils.nextPosition(currentX, currentY, direction)
         return this.walls[`${x},${y}`] || false;
     }
 
     mountObjects() {
-        Object.values(this.gameObjects).forEach(o => {
-
+        Object.keys(this.gameObjects).forEach(key => {
+            let object = this.gameObjects[key];
+            object.id = key;
             //TODO: Additional logic to determine if object should mount.
-            o.mount(this);
+            object.mount(this);
         })
     }
+    //Start cutscene
+
+   async startCutscene(events) {
+        this.isCutscenePlaying = true;
+        //start a loop of async events and await each one.
+            for (let i=0; i<events.length; i++) {
+                const eventHandler = new OverworldEvent({
+                    map: this,
+                    event: events[i]
+                })
+                await eventHandler.init();
+            }
+
+        this.isCutscenePlaying = false;
+    }
     //Fired when game object ENTERS
-    addWall(x,y) {
+    addWall(x, y) {
         this.walls[`${x},${y}`] = true;
     }
     //Fired when game object EXITS
     removeWall(x, y) {
-       delete this.walls[`${x},${y}`]
+        delete this.walls[`${x},${y}`]
     }
     //Fired when game object MOVES
     moveWall(wasX, wasY, direction) {
-       this.removeWall(wasX, wasY) 
-       const {x,y} = utils.nextPosition(wasX, wasY, direction)
-       this.addWall(x,y);
+        this.removeWall(wasX, wasY)
+        const { x, y } = utils.nextPosition(wasX, wasY, direction)
+        this.addWall(x, y);
     }
 }
 
@@ -56,16 +74,35 @@ window.OverworldMaps = {
         gameObjects: {
             hero: new Person({
                 isPlayerControlled: true,
-                x:utils.withGrid(5),
-                y:utils.withGrid(6),
+                x: utils.withGrid(5),
+                y: utils.withGrid(6),
             }),
-            npc1: new Person({
-                x:utils.withGrid(7),
-                y:utils.withGrid(9),
-                src: "images/characters/people/npc1.png"
+            npcA: new Person({
+                x: utils.withGrid(7),
+                y: utils.withGrid(9),
+                src: "images/characters/people/npc1.png",
+                behaviorLoop: [
+                    { type: 'stand', direction: 'left', time: 800 }, 
+                    { type: 'stand', direction: 'up', time: 800 }, 
+                    { type: 'stand', direction: 'right', time: 1200 }, 
+                    { type: 'stand', direction: 'up', time: 300 },
+                ]
+            }),
+            npcB: new Person({
+                x: utils.withGrid(3),
+                y: utils.withGrid(7),
+                src: "images/characters/people/npc2.png",
+                behaviorLoop: [
+                    //This loop would have the npc walking left and pausing forever. Remember, to make movement loops work with map so you're not walking people off the map.
+                    { type: 'walk', direction: 'left' },
+                    { type: 'stand', direction: 'up', time: 800 },
+                    { type: 'walk', direction: 'up' },
+                    { type: 'walk', direction: 'right' },
+                    { type: 'walk', direction: 'down' },
+                ]
             })
         },
-            walls: {
+        walls: {
             [utils.asGridCoord(7, 6)]: true,
             [utils.asGridCoord(8, 6)]: true,
             [utils.asGridCoord(7, 7)]: true,
